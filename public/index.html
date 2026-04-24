@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taste-Task 试金石 · AI记忆能力测试集</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#ffffff;--bg-secondary:#f8f8f8;--bg-tertiary:#f2f2f2;
+  --text-primary:#111111;--text-secondary:#666666;--text-tertiary:#999999;
+  --border-light:#f0f0f0;--border-mid:#e0e0e0;--border-strong:#cccccc;
+  --accent:#4F46E5;--accent-dark:#4338CA;--accent-light:rgba(79,70,229,.08);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg-primary:#1c1c1e;--bg-secondary:#2c2c2e;--bg-tertiary:#141414;
+    --text-primary:#f2f2f7;--text-secondary:#aeaeb2;--text-tertiary:#636366;
+    --border-light:#2c2c2e;--border-mid:#3a3a3c;--border-strong:#48484a;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:var(--bg-tertiary);min-height:100vh;color:var(--text-primary)}
+.app{max-width:900px;margin:0 auto;padding:0 0 80px}
+
+/* 顶部导航 */
+.header{background:var(--bg-primary);border-bottom:1px solid var(--border-light);padding:16px 20px;text-align:center}
+.header h1{font-size:20px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.header p{font-size:12px;color:var(--text-secondary)}
+.nav{display:flex;gap:4px;padding:12px 16px;background:var(--bg-primary);border-bottom:1px solid var(--border-light);position:sticky;top:0;z-index:100;align-items:center;flex-wrap:wrap}
+.nav-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-right:12px}
+.nav-btn{padding:7px 16px;border-radius:20px;border:1px solid transparent;font-size:13px;cursor:pointer;background:transparent;color:var(--text-secondary);transition:all .15s;font-family:inherit}
+.nav-btn.active{background:var(--bg-primary);border-color:var(--border-strong);color:var(--text-primary);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.nav-btn:hover:not(.active){background:var(--bg-secondary)}
+
+/* 徽章 */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.favorite-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .15s;display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--text-secondary)}
+.favorite-btn:hover{background:var(--bg-secondary)}
+.favorite-btn.active{color:#f59e0b}
+.favorite-count{font-size:11px;color:var(--text-tertiary);margin-left:2px}
+
+/* 统计卡片 */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px}
+.stat-card{background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-light);padding:14px;text-align:center}
+.stat-card .n{font-size:22px;font-weight:600}
+.stat-card .l{font-size:11px;color:var(--text-secondary);margin-top:2px}
+
+/* 等级说明 */
+.level-guide{background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-light);padding:16px;margin:16px}
+.level-guide h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary)}
+.level-item{display:flex;align-items:flex-start gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)}
+.level-item:last-child{border-bottom:none}
+.level-badge{min-width:32px;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;text-align:center}
+.level-content h4{font-size:13px;font-weight:500;margin-bottom:2px}
+.level-content p{font-size:12px;color:var(--text-secondary);line-height:1.5}
+
+/* 闪卡区域 */
+.card-area{padding:24px 16px;display:flex;flex-direction:column;align-items:center;min-height:500px}
+.shuffle-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;padding:12px;background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-light)}
+.shuffle-btn{padding:8px 16px;border-radius:20px;border:1px solid var(--border-mid);background:var(--bg-primary);cursor:pointer;font-size:13px;color:var(--text-primary);transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:6px}
+.shuffle-btn:hover{background:var(--bg-secondary)}
+.progress-bar{width:100%;max-width:520px;height:3px;background:var(--border-light);border-radius:2px;margin-bottom:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.progress-text{font-size:12px;color:var(--text-tertiary);width:100%;max-width:520px;text-align:right;margin-bottom:16px}
+.card-stack{position:relative;width:100%;max-width:520px;height:360px}
+.card-behind{position:absolute;width:100%;border-radius:var(--radius-lg);background:var(--bg-primary);border:1px solid var(--border-mid)}
+.card-behind-2{top:10px;left:8px;right:8px;height:340px;opacity:.35}
+.card-behind-1{top:5px;left:4px;right:4px;height:350px;opacity:.65}
+.card-main{position:absolute;top:0;left:0;right:0;height:360px;border-radius:var(--radius-lg);background:var(--bg-primary);border:1px solid var(--border-mid);cursor:grab;user-select:none;transition:box-shadow .15s;box-shadow:0 2px 16px rgba(0,0,0,.08);display:flex;flex-direction:column;overflow:hidden}
+.card-main:active{cursor:grabbing}
+.card-header{padding:18px 22px 12px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card-body{flex:1;padding:18px 22px;display:flex;flex-direction:column;justify-content:center;overflow-y:auto}
+.card-query{font-size:21px;font-weight:500;color:var(--text-primary);line-height:1.4;margin-bottom:8px}
+.card-action-area{display:flex;justify-content:center;margin:16px 0}
+.ai-assistant-btn{background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%);color:#fff;border:none;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(79,70,229,.3)}
+.ai-assistant-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,70,229,.4)}
+.ai-assistant-btn:active{transform:translateY(0)}
+.card-hint{font-size:13px;color:var(--text-tertiary);margin-top:14px}
+.card-footer{padding:10px 22px;border-top:1px solid var(--border-light);display:flex;gap:12px;font-size:11px;color:var(--text-tertiary);flex-wrap:wrap;align-items:center}
+.card-answer-section{margin-bottom:12px}
+.card-answer-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);margin-bottom:5px}
+.card-answer-text{font-size:13px;color:var(--text-primary);line-height:1.65;background:var(--bg-secondary);border-radius:var(--radius-sm);padding:10px 13px;white-space:pre-wrap}
+.card-img{max-width:100%;border-radius:var(--radius-sm);margin-top:10px;max-height:110px;object-fit:cover}
+.swipe-indicator{position:absolute;top:50%;transform:translateY(-50%);font-size:28px;font-weight:700;opacity:0;transition:opacity .08s;pointer-events:none}
+.swipe-left-ind{left:18px;color:#ef4444}
+.swipe-right-ind{right:18px;color:#22c55e}
+.controls{display:flex;align-items:center;gap:16px;margin-top:22px}
+.ctrl-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--border-mid);background:var(--bg-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .15s;color:var(--text-primary)}
+.ctrl-btn:hover{background:var(--bg-secondary);transform:scale(1.06)}
+.ctrl-btn:active{transform:scale(.94)}
+.ctrl-btn.primary{width:56px;height:56px;border-width:1.5px;border-color:var(--border-strong)}
+.done-card{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;border-radius:var(--radius-lg);background:var(--bg-primary);border:1px solid var(--border-mid);height:360px}
+
+/* 表格视图 */
+.table-wrap{padding:16px}
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-select{padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-mid);background:var(--bg-primary);font-size:13px;color:var(--text-primary);cursor:pointer;font-family:inherit}
+.tbl-container{border-radius:var(--radius-md);border:1px solid var(--border-light);background:var(--bg-primary);overflow:hidden}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 13px;text-align:left;font-weight:500;font-size:11px;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-mid);white-space:nowrap}
+.tbl td{padding:10px 13px;border-bottom:1px solid var(--border-light);vertical-align:top;color:var(--text-primary);line-height:1.5}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg-secondary)}
+.expand-btn{background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;padding:3px 8px;border-radius:6px;font-family:inherit}
+.expand-btn:hover{background:var(--accent-light)}
+.expand-detail{background:var(--bg-secondary);padding:14px 16px;border-bottom:1px solid var(--border-light)}
+.expand-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px}
+.expand-label{font-weight:500;color:var(--text-secondary);margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.expand-val{color:var(--text-primary);line-height:1.6;white-space:pre-wrap}
+
+/* 添加表单 */
+.add-wrap{padding:20px 16px;max-width:620px}
+.add-section-title{font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:16px}
+.add-form{background:var(--bg-primary);border-radius:var(--radius-lg);border:1px solid var(--border-light);padding:24px;display:flex;flex-direction:column;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:13px;font-weight:500;color:var(--text-secondary)}
+.form-label .req{color:#ef4444;margin-left:2px}
+.form-input,.form-select,.form-textarea{padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-mid);background:var(--bg-primary);font-size:14px;color:var(--text-primary);font-family:inherit;transition:border-color .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.6}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.upload-zone{border:1.5px dashed var(--border-mid);border-radius:var(--radius-md);padding:28px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg-secondary)}
+.upload-zone:hover{border-color:var(--accent);background:var(--accent-light)}
+.upload-zone .up-icon{font-size:24px;margin-bottom:6px}
+.upload-zone p{font-size:13px;color:var(--text-secondary)}
+.upload-zone .sub{font-size:11px;color:var(--text-tertiary);margin-top:3px}
+.card-img-prev{max-width:100%;border-radius:var(--radius-sm);max-height:130px;object-fit:cover}
+.submit-btn{padding:11px;border-radius:var(--radius-md);background:var(--accent);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .15s;font-family:inherit}
+.submit-btn:hover{background:var(--accent-dark)}
+.submit-btn:active{transform:scale(.98)}
+.user-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle}
+
+/* 管理员按钮 */
+.admin-btn{padding:4px 8px;border-radius:6px;border:1px solid var(--border-mid);background:var(--bg-primary);cursor:pointer;font-size:11px;color:var(--text-secondary);transition:all .15s;font-family:inherit;margin-left:8px}
+.admin-btn:hover{background:var(--bg-secondary);color:#ef4444;border-color:#ef4444}
+.admin-btn.edit:hover{color:var(--accent);border-color:var(--accent)}
+
+/* 验证弹窗 */
+.verification-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.verification-card{background:var(--bg-primary);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.15);text-align:center}
+.verification-icon{font-size:48px;margin-bottom:16px}
+.verification-title{font-size:20px;font-weight:600;margin-bottom:12px;color:var(--text-primary)}
+.verification-question{font-size:15px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+.verification-input{width:100%;padding:12px 16px;border:2px solid var(--border-mid);border-radius:var(--radius-md);font-size:15px;text-align:center;outline:none;transition:border-color .15s;margin-bottom:16px;background:var(--bg-primary);color:var(--text-primary)}
+.verification-input:focus{border-color:var(--accent)}
+.verification-input.error{border-color:#ef4444}
+.verification-btn{width:100%;padding:12px;border-radius:var(--radius-md);background:var(--accent);color:#fff;font-size:15px;font-weight:500;border:none;cursor:pointer;transition:all .15s;font-family:inherit}
+.verification-btn:hover{background:var(--accent-dark)}
+.verification-btn:active{transform:scale(.98)}
+.verification-hint{font-size:12px;color:var(--text-tertiary);margin-top:12px}
+.verification-error{color:#ef4444;font-size:13px;margin-top:8px;min-height:20px}
+
+/* Modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:var(--bg-primary);border-radius:var(--radius-lg);padding:24px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:16px}
+.modal input{width:100%;padding:10px 12px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);margin-bottom:16px;font-size:14px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.modal-btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-mid);cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s}
+.modal-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.modal-btn.primary:hover{background:var(--accent-dark)}
+.modal-btn.secondary{background:transparent;color:var(--text-primary)}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 22px;border-radius:24px;font-size:13px;pointer-events:none;z-index:9999;opacity:0;transition:opacity .25s;white-space:nowrap}
+.toast.show{opacity:1}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-secondary);font-size:14px}
+.done-emoji{font-size:36px}
+.done-title{font-size:16px;font-weight:500;color:var(--text-primary)}
+.done-sub{font-size:13px;color:var(--text-secondary)}
+.reset-btn{padding:8px 20px;border-radius:20px;border:1px solid var(--border-mid);background:transparent;cursor:pointer;font-size:13px;color:var(--text-primary);font-family:inherit;transition:all .15s}
+.reset-btn:hover{background:var(--bg-secondary)}
+
+/* 收藏排行榜 */
+.fav-rank{background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-light);padding:16px;margin:16px}
+.fav-rank h3{font-size:14px;font-weight:600;margin-bottom:12px}
+.fav-item{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border-light)}
+.fav-item:last-child{border-bottom:none}
+.fav-rank-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.fav-rank-num:nth-child(1){background:#f59e0b}
+.fav-rank-num:nth-child(2){background:#8b5cf6}
+.fav-rank-num:nth-child(3){background:#ec4899}
+.fav-info{flex:1}
+.fav-q{font-size:13px;font-weight:500}
+.fav-meta{font-size:11px;color:var(--text-tertiary)}
+.fav-count{font-size:12px;color:#f59e0b;font-weight:500;display:flex;align-items:center;gap:2px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// 配置
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+const BATCH_SIZE = 30;
+
+const LEVEL_STYLE={
+  L1:{bg:'#ECFDF5',color:'#065F46'},
+  L2:{bg:'#FFFBEB',color:'#92400E'},
+  L3:{bg:'#FFF7ED',color:'#9A3412'},
+  L4:{bg:'#FEF2F2',color:'#991B1B'},
+  L5:{bg:'#F5F3FF',color:'#4C1D95'},
+};
+const SHEET_COLOR={
+  '对话记忆':'#10B981',
+  '本机·日历':'#3B82F6',
+  '本机·备忘录':'#F59E0B',
+  '本机·短信':'#8B5CF6',
+  '本机·联系人':'#EC4899',
+  '本机·图库':'#06B6D4',
+  '本机·文件':'#78716C',
+  '多数据源':'#EF4444',
+  '边界负样本':'#6B7280',
+};
+const SHEET_OPTIONS=Object.keys(SHEET_COLOR);
+
+// 生成用户ID
+let userId = localStorage.getItem('tastetask_userid');
+if (!userId) {
+  userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('tastetask_userid', userId);
+}
+
+// 工具函数
+
+// 语音助手调用功能
+function detectPlatform() {
+  const ua = navigator.userAgent.toLowerCase();
+
+  if (ua.indexOf('huawei') > -1 || ua.indexOf('honor') > -1) {
+    return 'harmonyos';
+  }
+  if (ua.indexOf('iphone') > -1 || ua.indexOf('ipad') > -1) {
+    return 'ios';
+  }
+  if (ua.indexOf('android') > -1) {
+    if (ua.indexOf('mi') > -1 || ua.indexOf('redmi') > -1 || ua.indexOf('xiaomi') > -1) {
+      return 'xiaomi';
+    }
+    if (ua.indexOf('oppo') > -1) {
+      return 'oppo';
+    }
+    if (ua.indexOf('vivo') > -1) {
+      return 'vivo';
+    }
+    return 'android';
+  }
+  return 'unknown';
+}
+
+function callVoiceAssistant(query) {
+  const platform = detectPlatform();
+  const encodedQuery = encodeURIComponent(query);
+
+  try {
+    switch (platform) {
+      case 'harmonyos':
+        // 华为鸿蒙系统 - 尝试多种方式唤醒小艺
+        const harmonyOSMethods = [
+          `hwvrcs://cmd?action=voice&query=${encodedQuery}`,
+          `huawei://voiceassistant?text=${encodedQuery}`,
+          `hwvrcs://voiceassistant?query=${encodedQuery}`,
+        ];
+        for (const url of harmonyOSMethods) {
+          setTimeout(() => { window.location.href = url; }, 100);
+        }
+        showToast('正在唤醒华为小艺语音助手...');
+        break;
+
+      case 'xiaomi':
+        window.location.href = `miui://vlassistant/search?query=${encodedQuery}`;
+        showToast('正在唤醒小米小爱同学...');
+        break;
+
+      case 'oppo':
+        window.location.href = `oppokit://voiceassistant/search?query=${encodedQuery}`;
+        showToast('正在唤醒OPPO小布助手...');
+        break;
+
+      case 'vivo':
+        window.location.href = `vivovoice://search?query=${encodedQuery}`;
+        showToast('正在唤醒VIVO Jovi...');
+        break;
+
+      case 'ios':
+        window.location.href = `siri://${encodedQuery}`;
+        showToast('尝试唤醒Siri（可能需要在设置中允许）...');
+        break;
+
+      default:
+        // 未知平台，使用 Web Speech API 作为备选
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.onresult = (event) => {
+              const transcript = event.results[0][0].transcript;
+              showToast(`识别结果: ${transcript}`);
+            };
+            recognition.onerror = () => {
+              showToast('语音识别启动失败，请手动询问语音助手');
+            };
+            recognition.start();
+            showToast('已启动语音识别，请说出问题...');
+          }
+        } else {
+          showToast('请手动唤醒语音助手并询问：' + query);
+        }
+    }
+  } catch (err) {
+    console.error('语音助手调用失败:', err);
+    showToast('调用失败，请手动询问语音助手');
+  }
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+async function apiCall(endpoint, options = {}) {
+  try {
+    const res = await fetch(`${API_BASE}/api${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': userId,
+        ...options.headers,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || '请求失败');
+    }
+    return await res.json();
+  } catch (err) {
+    showToast(err.message);
+    throw err;
+  }
+}
+
+// 组件
+
+// 验证弹窗组件
+function VerificationModal({ onVerified }) {
+  const [answer, setAnswer] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = () => {
+    if (!answer.trim()) {
+      setError('请输入答案');
+      return;
+    }
+
+    setLoading(true);
+    // 模拟验证延迟
+    setTimeout(() => {
+      if (answer.trim() === '陈建辉') {
+        localStorage.setItem('tastetask_verified', 'true');
+        localStorage.setItem('tastetask_verified_time', Date.now().toString());
+        onVerified();
+      } else {
+        setError('答案错误，请重新输入');
+        setLoading(false);
+      }
+    }, 500);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
+  return (
+    <div className="verification-overlay">
+      <div className="verification-card">
+        <div className="verification-icon">🔐</div>
+        <h2 className="verification-title">访问验证</h2>
+        <p className="verification-question">
+          请回答以下问题以继续访问：<br/>
+          <strong>把这个网站分享给你的人叫什么？</strong>
+        </p>
+        <input
+          type="text"
+          className={`verification-input ${error ? 'error' : ''}`}
+          placeholder="输入答案"
+          value={answer}
+          onChange={e => {setAnswer(e.target.value);setError('');}}
+          onKeyPress={handleKeyPress}
+          autoFocus
+          disabled={loading}
+        />
+        <button className="verification-btn" onClick={handleSubmit} disabled={loading}>
+          {loading ? '验证中...' : '确认'}
+        </button>
+        <div className="verification-hint">提示：答案是两个字的姓名</div>
+        {error && <div className="verification-error">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
+function LevelBadge({level}){
+  const s=LEVEL_STYLE[level]||{bg:'#f0f0f0',color:'#666'};
+  return <span className="badge" style={{background:s.bg,color:s.color}}>{level}</span>;
+}
+
+function SheetBadge({sheet}){
+  const c=SHEET_COLOR[sheet]||'#888';
+  return <span className="badge" style={{background:c+'1a',color:c}}>{sheet}</span>;
+}
+
+function FavoriteButton({ caseId, isFavorite, favoriteCount, onToggle }) {
+  return (
+    <button className={`favorite-btn ${isFavorite ? 'active' : ''}`} onClick={() => onToggle(caseId)}>
+      <span>{isFavorite ? '★' : '☆'}</span>
+      <span>收藏</span>
+      {favoriteCount > 0 && <span className="favorite-count">({favoriteCount})</span>}
+    </button>
+  );
+}
+
+// 等级说明组件
+function LevelGuide() {
+  const levels = [
+    {
+      level: 'L1',
+      name: '直接召回',
+      desc: '无需推理，直接从记忆中提取信息。如："我家的地址在哪里？"',
+      examples: '查询地址、电话号码、生日等明确记录的信息'
+    },
+    {
+      level: 'L2',
+      name: '模糊单跳',
+      desc: '需要一次推理或模糊匹配。如："童童的生日是哪天？"（需先识别童童=女儿）',
+      examples: '别名识别、今日日期推算、主题模糊匹配'
+    },
+    {
+      level: 'L3',
+      name: '多跳推理',
+      desc: '需要2-3步连续推理。如："童童是什么星座？"（别名→关系→生日→星座）',
+      examples: '多跳关联、日期换算、偏好综合'
+    },
+    {
+      level: 'L4',
+      name: '聚合归类',
+      desc: '需要检索多条记忆并归类。如："我最近记过什么重要日期？"',
+      examples: '多主题聚合、时间范围筛选、数据汇总'
+    },
+    {
+      level: 'L5',
+      name: '复杂计算',
+      desc: '需要复杂计算和深度分析。如："帮我统计这周的账单总计"',
+      examples: '时间范围推算、多条聚合、求和统计'
+    }
+  ];
+
+  return (
+    <div className="level-guide">
+      <h3>📊 等级说明</h3>
+      {levels.map(l => (
+        <div key={l.level} className="level-item">
+          <div className="level-badge" style={{
+            background: LEVEL_STYLE[l.level].bg,
+            color: LEVEL_STYLE[l.level].color
+          }}>{l.level}</div>
+          <div className="level-content">
+            <h4>{l.name}</h4>
+            <p>{l.desc}</p>
+            <p style={{fontSize:'11px',color:'var(--text-tertiary)',marginTop:'2px'}}>
+              示例：{l.examples}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 闪卡组件
+function FlashCard({card,dragX,isDragging,onFlip,flipped,onFavorite}){
+  const rot=dragX*0.05;
+  const style={
+    transform:`translateX(${dragX}px) rotate(${rot}deg)`,
+    transition:isDragging?'none':'transform .3s cubic-bezier(.34,1.56,.64,1)',
+    boxShadow:Math.abs(dragX)>20?'0 10px 36px rgba(0,0,0,.18)':'0 2px 16px rgba(0,0,0,.08)',
+  };
+  const leftOp=Math.min(1,Math.max(0,(-dragX-30)/80));
+  const rightOp=Math.min(1,Math.max(0,(dragX-30)/80));
+  return(
+    <div className="card-main" style={style}>
+      <div className="swipe-indicator swipe-left-ind" style={{opacity:leftOp}}>✕</div>
+      <div className="swipe-indicator swipe-right-ind" style={{opacity:rightOp}}>✓</div>
+      <div className="card-header">
+        <span style={{fontSize:11,fontWeight:500,color:'var(--text-tertiary)',fontFamily:'monospace',marginRight:'auto'}}>{card.id}</span>
+        <LevelBadge level={card.level}/>
+        <SheetBadge sheet={card.sheet}/>
+        <FavoriteButton caseId={card.id} isFavorite={card.is_favorite} favoriteCount={card.favorite_count} onToggle={onFavorite} />
+      </div>
+      {!flipped?(
+        <div className="card-body" onClick={onFlip}>
+          <div className="card-query">{card.query}</div>
+          <div className="card-action-area">
+            <button
+              className="ai-assistant-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                callVoiceAssistant(card.query);
+              }}
+            >
+              发给你的AI助手
+            </button>
+          </div>
+          {card.image_data&&<img src={card.image_data} className="card-img" alt="附图"/>}
+          <p className="card-hint">点击查看答案 · 左右拖动滑过</p>
+        </div>
+      ):(
+        <div className="card-body" style={{overflowY:'auto'}}>
+          <div className="card-answer-section">
+            <div className="card-answer-label">预设数据</div>
+            <div className="card-answer-text" style={{fontSize:12}}>{card.preset}</div>
+          </div>
+          <div className="card-answer-section">
+            <div className="card-answer-label">Golden Answer</div>
+            <div className="card-answer-text">{card.golden}</div>
+          </div>
+          {card.image_data && (
+            <div className="card-answer-section">
+              <div className="card-answer-label">附图</div>
+              <img src={card.image_data} style={{maxWidth:'100%',borderRadius:8}} alt="附图"/>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="card-footer">
+        <span>📍 {card.source}</span>
+        <span style={{marginLeft:'auto',maxWidth:'45%',textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>🎯 {card.skill}</span>
+      </div>
+    </div>
+  );
+}
+
+// 卡片视图
+function CardsView(){
+  const [cases, setCases] = useState([]);
+  const [dismissed, setDismissed] = useState(new Set());
+  const [flipped, setFlipped] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const startX = useRef(0);
+  const active = cases.filter(c => !dismissed.has(c.id));
+  const card = active[0];
+
+  // 加载随机用例
+  const loadCases = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiCall(`/cases?random=true&limit=${BATCH_SIZE}`);
+      setCases(data);
+      setDismissed(new Set());
+      setFlipped(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCases();
+  }, [loadCases]);
+
+  const dismiss = useCallback(() => {
+    if (!card) return;
+    setDismissed(d => new Set([...d, card.id]));
+    setFlipped(false);
+    setDragX(0);
+  }, [card]);
+
+  const undo = useCallback(() => {
+    const arr = [...dismissed];
+    if (!arr.length) return;
+    const last = arr[arr.length - 1];
+    setDismissed(d => { const nd = new Set(d); nd.delete(last); return nd; });
+    setFlipped(false);
+  }, [dismissed]);
+
+  const reset = () => { setDismissed(new Set()); setFlipped(false); setDragX(0); };
+
+  useEffect(() => { setFlipped(false); }, [card?.id]);
+
+  const onDown = e => { startX.current = e.touches ? e.touches[0].clientX : e.clientX; setIsDragging(true); };
+  const onMove = e => {
+    if (!isDragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - startX.current;
+    setDragX(x);
+  };
+  const onUp = () => {
+    setIsDragging(false);
+    if (dragX < -100) { setDragX(-700); setTimeout(() => { dismiss(); setDragX(0); }, 280); }
+    else if (dragX > 100) { setDragX(700); setTimeout(() => { dismiss(); setDragX(0); }, 280); }
+    else setDragX(0);
+  };
+
+  // 收藏切换
+  const handleFavorite = async (caseId) => {
+    try {
+      const result = await apiCall(`/cases/${caseId}/favorite`, { method: 'POST' });
+      setCases(prev => prev.map(c => {
+        if (c.id === caseId) {
+          return {
+            ...c,
+            is_favorite: result.favorited,
+            favorite_count: result.favorited ? (c.favorite_count || 0) + 1 : Math.max(0, (c.favorite_count || 0) - 1)
+          };
+        }
+        return c;
+      }));
+      showToast(result.favorited ? '★ 已收藏' : '☆ 已取消收藏');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading) {
+    return <div className="card-area"><div className="done-card"><div>加载中...</div></div></div>;
+  }
+
+  const total = cases.length, done = dismissed.size, pct = total ? done / total : 0;
+  return (
+    <div className="card-area">
+      <div className="shuffle-bar">
+        <span style={{fontSize:13,color:'var(--text-secondary)'}}>当前批次：{BATCH_SIZE} 条用例</span>
+        <button className="shuffle-btn" onClick={loadCases}>
+          <span>🔄</span> 换一批
+        </button>
+      </div>
+      <div className="progress-bar"><div className="progress-fill" style={{width:pct*100+'%'}}/></div>
+      <div className="progress-text">{done} / {total} 已查看</div>
+      <div className="card-stack"
+        onMouseDown={onDown} onMouseMove={isDragging?onMove:null} onMouseUp={onUp} onMouseLeave={isDragging?onUp:null}
+        onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}>
+        {active.length>2&&<div className="card-behind card-behind-2"/>}
+        {active.length>1&&<div className="card-behind card-behind-1"/>}
+        {card
+          ?<FlashCard card={card} dragX={dragX} isDragging={isDragging} onFlip={()=>setFlipped(f=>!f)} flipped={flipped} onFavorite={handleFavorite}/>
+          :<div className="done-card">
+            <div className="done-emoji">🎉</div>
+            <div className="done-title">本批次 {total} 条已完成</div>
+            <div className="done-sub">点击下方按钮换一批继续</div>
+            <button className="reset-btn" onClick={loadCases} style={{marginTop:8}}>🔄 换一批</button>
+            <button className="reset-btn" onClick={reset} style={{marginTop:8}}>重新练习本批次</button>
+          </div>}
+      </div>
+      <div className="controls">
+        <button className="ctrl-btn" onClick={undo} title="撤回">↩</button>
+        <button className="ctrl-btn primary" onClick={()=>setFlipped(f=>!f)} title="翻面">
+          {flipped?'🙈':'👁'}
+        </button>
+        <button className="ctrl-btn" onClick={dismiss} title="下一张">→</button>
+      </div>
+      {card&&<div style={{marginTop:14,fontSize:12,color:'var(--text-tertiary)',textAlign:'center',maxWidth:520,lineHeight:1.7}}>
+        备注：{card.note}
+      </div>}
+    </div>
+  );
+}
+
+// 表格视图
+function TableView(){
+  const [cases, setCases] = useState([]);
+  const [lvFilter, setLvFilter] = useState('all');
+  const [shFilter, setShFilter] = useState('all');
+  const [expanded, setExpanded] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
+
+  useEffect(() => {
+    apiCall('/cases').then(setCases).finally(() => setLoading(false));
+  }, []);
+
+  const handleFavorite = async (caseId) => {
+    try {
+      const result = await apiCall(`/cases/${caseId}/favorite`, { method: 'POST' });
+      setCases(prev => prev.map(c => {
+        if (c.id === caseId) {
+          return {
+            ...c,
+            is_favorite: result.favorited,
+            favorite_count: result.favorited ? (c.favorite_count || 0) + 1 : Math.max(0, (c.favorite_count || 0) - 1)
+          };
+        }
+        return c;
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (caseId, password) => {
+    try {
+      await apiCall(`/cases/${caseId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ password })
+      });
+      setCases(prev => prev.filter(c => c.id !== caseId));
+      setShowDeleteModal(null);
+      showToast('✓ 用例已删除');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const sheets = [...new Set(cases.map(c => c.sheet))];
+  const filtered = cases.filter(c => (lvFilter==='all'||c.level===lvFilter) && (shFilter==='all'||c.sheet===shFilter));
+
+  if (loading) return <div className="table-wrap"><div className="empty">加载中...</div></div>;
+
+  return (
+    <div className="table-wrap">
+      <div className="filter-row">
+        <select className="filter-select" value={lvFilter} onChange={e=>setLvFilter(e.target.value)}>
+          <option value="all">全部等级</option>
+          {['L1','L2','L3','L4','L5'].map(l=><option key={l}>{l}</option>)}
+        </select>
+        <select className="filter-select" value={shFilter} onChange={e=>setShFilter(e.target.value)}>
+          <option value="all">全部来源</option>
+          {sheets.map(s=><option key={s}>{s}</option>)}
+        </select>
+        <span style={{fontSize:12,color:'var(--text-tertiary)',marginLeft:'auto'}}>{filtered.length} 条</span>
+      </div>
+      <div className="tbl-container">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th style={{width:80}}>编号</th>
+              <th style={{width:56}}>等级</th>
+              <th>查询 Query</th>
+              <th style={{width:110}}>数据源</th>
+              <th style={{width:90}}>收藏</th>
+              <th style={{width:100}}>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(c=>[
+              <tr key={c.id}>
+                <td style={{fontFamily:'monospace',fontSize:11,color:'var(--text-secondary)'}}>
+                  {c.user_added&&<span className="user-dot"/>}{c.id}
+                </td>
+                <td><LevelBadge level={c.level}/></td>
+                <td style={{fontWeight:500}}>{c.query}</td>
+                <td><SheetBadge sheet={c.sheet}/></td>
+                <td>
+                  <FavoriteButton caseId={c.id} isFavorite={c.is_favorite} favoriteCount={c.favorite_count} onToggle={handleFavorite} />
+                </td>
+                <td>
+                  <button className="expand-btn" onClick={()=>setExpanded(expanded===c.id?null:c.id)}>{expanded===c.id?'收起':'展开'}</button>
+                  {c.user_added && <button className="admin-btn" onClick={() => setShowDeleteModal(c.id)}>删除</button>}
+                </td>
+              </tr>,
+              expanded===c.id&&<tr key={c.id+'_d'}>
+                <td colSpan={6} style={{padding:0,borderBottom:'1px solid var(--border-light)'}}>
+                  <div className="expand-detail">
+                    <div className="expand-grid">
+                      <div>
+                        <div className="expand-label">预设数据</div>
+                        <div className="expand-val">{c.preset}</div>
+                      </div>
+                      <div>
+                        <div className="expand-label">Golden Answer</div>
+                        <div className="expand-val">{c.golden}</div>
+                      </div>
+                      <div>
+                        <div className="expand-label">考察能力</div>
+                        <div className="expand-val">{c.skill}</div>
+                      </div>
+                      <div>
+                        <div className="expand-label">难点备注</div>
+                        <div className="expand-val">{c.note}</div>
+                      </div>
+                      {c.image_data&&<div style={{gridColumn:'1/-1'}}>
+                        <div className="expand-label">附图</div>
+                        <img src={c.image_data} style={{maxWidth:220,borderRadius:8,marginTop:4}} alt=""/>
+                      </div>}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ])}
+          </tbody>
+        </table>
+        {filtered.length===0&&<div className="empty">没有符合条件的用例</div>}
+      </div>
+      {showDeleteModal && <DeleteModal caseId={showDeleteModal} onConfirm={handleDelete} onCancel={() => setShowDeleteModal(null)} />}
+    </div>
+  );
+}
+
+// 删除确认弹窗
+function DeleteModal({ caseId, onConfirm, onCancel }) {
+  const [password, setPassword] = useState('');
+
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>管理员验证</h3>
+        <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:'16px'}}>
+          请输入管理员密码以删除此用例
+        </p>
+        <input
+          type="password"
+          placeholder="管理员密码"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && onConfirm(caseId, password)}
+        />
+        <div className="modal-actions">
+          <button className="modal-btn secondary" onClick={onCancel}>取消</button>
+          <button className="modal-btn primary" onClick={() => onConfirm(caseId, password)}>确认删除</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 添加用例视图
+function AddView({onAdd}){
+  const [form,setForm]=useState({query:'',level:'L1',sheet:'对话记忆',source:'',preset:'',golden:'',skill:'',note:''});
+  const [img,setImg]=useState(null);
+  const fileRef=useRef();
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const handleFile=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=ev=>setImg(ev.target.result);r.readAsDataURL(f);
+  };
+  const submit=async ()=>{
+    if(!form.query.trim()){showToast('请填写查询 Query');return;}
+    if(!form.golden.trim()){showToast('请填写期望输出');return;}
+    try {
+      await apiCall('/cases', {
+        method: 'POST',
+        body: JSON.stringify({...form,image_data:img||null})
+      });
+      setForm({query:'',level:'L1',sheet:'对话记忆',source:'',preset:'',golden:'',skill:'',note:''});
+      setImg(null);
+      showToast('✓ 已添加到测试集');
+      if(onAdd) onAdd();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  return(
+    <div className="add-wrap">
+      <div className="add-section-title">添加新用例</div>
+      <div className="add-form">
+        <div className="form-group">
+          <label className="form-label">查询 Query <span className="req">*</span></label>
+          <input className="form-input" value={form.query} onChange={e=>set('query',e.target.value)} placeholder="用户实际的说话内容，尽量口语化"/>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">查询等级</label>
+            <select className="form-select" value={form.level} onChange={e=>set('level',e.target.value)}>
+              {['L1','L2','L3','L4','L5'].map(l=><option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">所属数据源</label>
+            <select className="form-select" value={form.sheet} onChange={e=>set('sheet',e.target.value)}>
+              {SHEET_OPTIONS.map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">具体来源（如：12306短信、系统日历等）</label>
+          <input className="form-input" value={form.source} onChange={e=>set('source',e.target.value)} placeholder="例：系统日历、备忘录"/>
+        </div>
+        <div className="form-group">
+          <label className="form-label">预设数据内容</label>
+          <textarea className="form-textarea" value={form.preset} onChange={e=>set('preset',e.target.value)} placeholder="触发这条 query 所需系统中预先存在的数据"/>
+        </div>
+        <div className="form-group">
+          <label className="form-label">期望输出 Golden Answer <span className="req">*</span></label>
+          <textarea className="form-textarea" value={form.golden} onChange={e=>set('golden',e.target.value)} placeholder="AI 应该给出的标准回答或关键要素"/>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">考察能力点</label>
+            <input className="form-input" value={form.skill} onChange={e=>set('skill',e.target.value)} placeholder="例：模糊匹配 + 字段提取"/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">难点 / 备注</label>
+            <input className="form-input" value={form.note} onChange={e=>set('note',e.target.value)} placeholder="易失败点说明"/>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">截图 / 附图（可选）</label>
+          <div className="upload-zone" onClick={()=>fileRef.current.click()}>
+            {img
+              ?<img src={img} className="card-img-prev" alt="preview"/>
+              :<><div className="up-icon">📎</div><p>点击上传截图、失败案例图片</p><p className="sub">支持 JPG · PNG · WEBP</p></>}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleFile}/>
+        </div>
+        <button className="submit-btn" onClick={submit}>+ 添加到测试集</button>
+      </div>
+    </div>
+  );
+}
+
+// 统计卡片
+function StatsRow({total,byLevel}){
+  const labels={L1:'直接召回',L2:'模糊单跳',L3:'多跳推理',L4:'聚合归类'};
+  const counts={L1:0,L2:0,L3:0,L4:0};
+  byLevel.forEach(item=>{if(counts[item.level]!==undefined)counts[item.level]=item.count;});
+  return(
+    <div className="stat-row">
+      {['L1','L2','L3','L4'].map(l=>(
+        <div key={l} className="stat-card">
+          <div className="n" style={{color:LEVEL_STYLE[l].color}}>{counts[l]}</div>
+          <div className="l">{l} · {labels[l]}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 收藏排行榜
+function FavoriteRanking({cases}){
+  if (!cases || cases.length === 0) return null;
+  return (
+    <div className="fav-rank">
+      <h3>🏆 收藏排行榜</h3>
+      {cases.slice(0, 5).map((c, i) => (
+        <div key={c.id} className="fav-item">
+          <div className="fav-rank-num">{i + 1}</div>
+          <div className="fav-info">
+            <div className="fav-q">{c.query}</div>
+            <div className="fav-meta">{c.id} · {c.sheet}</div>
+          </div>
+          <div className="fav-count">★ {c.favorite_count}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 主应用
+function App(){
+  const [verified, setVerified] = useState(false);
+  const [tab,setTab]=useState('cards');
+  const [stats,setStats]=useState(null);
+  const [topCases,setTopCases]=useState([]);
+
+  // 检查验证状态
+  useEffect(()=>{
+    const isVerified = localStorage.getItem('tastetask_verified');
+    if (isVerified === 'true') {
+      setVerified(true);
+    }
+  }, []);
+
+  useEffect(()=>{
+    if (!verified) return; // 未验证时不加载数据
+    apiCall('/stats').then(data=>{
+      setStats(data);
+    });
+    apiCall('/cases/top/favorites?limit=5').then(setTopCases);
+  },[verified]);
+
+  const tabs=[
+    {id:'cards',label:'闪卡练习'},
+    {id:'table',label:'测试集总览'},
+    {id:'add',label:'+ 添加用例'}
+  ];
+
+  return(
+    <>
+      {!verified && <VerificationModal onVerified={() => setVerified(true)} />}
+      {verified && (
+        <div className="app">
+          <div className="header">
+            <h1>Taste-Task 试金石</h1>
+            <p>AI记忆能力黄金测试集 · 让优秀被看见</p>
+          </div>
+          <div className="nav">
+            {tabs.map(t=><button key={t.id} className={`nav-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>{t.label}</button>)}
+          </div>
+          {tab!=='add'&&stats&&<StatsRow total={stats.total} byLevel={stats.byLevel}/>}
+          {tab==='cards'&&<CardsView/>}
+          {tab==='table'&&<TableView/>}
+          {tab==='add'&&<AddView/>}
+          {tab==='table'&&<FavoriteRanking cases={topCases}/>}
+          {tab==='cards'&&<LevelGuide/>}
+        </div>
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

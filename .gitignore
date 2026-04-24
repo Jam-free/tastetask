@@ -1,0 +1,11 @@
+node_modules/
+tastetask.db
+tastetask.db-shm
+tastetask.db-wal
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+dist/
+build/
