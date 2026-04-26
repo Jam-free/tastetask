@@ -160,19 +160,27 @@ function App() {
             className={`nav-btn ${tab === 'cards' ? 'active' : ''}`}
             onClick={() => setTab('cards')}
           >
-            体验故事卡
+            体验
           </button>
           <button
             className={`nav-btn ${tab === 'table' ? 'active' : ''}`}
             onClick={() => setTab('table')}
+            title="全部用例"
           >
-            全部用例
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:4}}>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+            用例
           </button>
           <button
             className={`nav-btn ${tab === 'favorites' ? 'active' : ''}`}
             onClick={() => setTab('favorites')}
+            title="我的收藏"
           >
-            我的收藏
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:4}}>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            收藏
           </button>
         </div>
 

@@ -133,10 +133,27 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
                 <div className="banner-body">
                   <div className="banner-query">{card.query}</div>
 
+                  <div className="banner-query-actions">
+                    <button
+                      className="assistant-btn-query"
+                      onClick={async e => {
+                        (e.target as HTMLButtonElement).blur()
+                        const r = await sendQueryToAssistant(card.query)
+                        toastIt(r.device === 'huawei' ? '已复制，可唤醒小艺粘贴提问' : '已复制到剪贴板')
+                      }}
+                    >
+                      <MicIcon size={16} /> 发到语音助手测试
+                    </button>
+                  </div>
+
                   <div className="banner-section">
                     <div className="banner-section-head">
                       <span className="banner-section-label">预设数据</span>
-                      <button className="banner-copy-btn" onClick={() => { navigator.clipboard.writeText(card.preset || ''); toastIt('已复制预设数据') }}>
+                      <button className="banner-copy-btn" onClick={e => {
+                        (e.target as HTMLButtonElement).blur()
+                        try { navigator.clipboard.writeText(card.preset || ''); toastIt('已复制预设数据') }
+                        catch { toastIt('复制失败，请手动复制') }
+                      }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                         复制
                       </button>
@@ -154,9 +171,6 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
 
                 <div className="banner-footer">
                   <span className="banner-source"><PinIcon size={11} /> {card.source}</span>
-                  <button className="assistant-btn-sm" onClick={async e => { e.stopPropagation(); const r = await sendQueryToAssistant(card.query); toastIt(r.device === 'huawei' ? '已复制，可唤醒小艺粘贴提问' : '已复制到剪贴板') }}>
-                    <MicIcon size={12} /> 发到助手
-                  </button>
                 </div>
               </>
             ) : (
