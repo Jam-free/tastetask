@@ -63,7 +63,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .banner-body{flex:1;padding:14px 20px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .banner-query{font-size:20px;font-weight:600;color:var(--text);line-height:1.4;letter-spacing:-.02em}
 .banner-section{background:var(--bg-secondary);border-radius:var(--radius-sm);padding:10px 13px}
-.banner-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);margin-bottom:4px}
+.banner-section-head{display:flex;align-items:center;justify-content:space-between}
+.banner-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)}
+.banner-copy-btn{background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:10px;display:inline-flex;align-items:center;gap:3px;padding:2px 5px;border-radius:4px;font-family:inherit;transition:all .12s}
+.banner-copy-btn:hover{background:var(--accent-light);color:var(--accent)}
 .banner-section-text{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap}
 .banner-section-text.golden{color:var(--accent);font-weight:500}
 .banner-img{max-width:100%;border-radius:var(--radius-sm);max-height:140px;object-fit:cover;display:block;margin-top:2px}
@@ -71,10 +74,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .banner-source{font-size:11px;color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px}
 .assistant-btn-sm{background:none;border:1px solid var(--border);border-radius:7px;padding:3px 9px;font-size:10px;color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s;font-family:inherit;margin-left:auto}
 .assistant-btn-sm:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-.banner-dots{display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0 0}
-.banner-dot{width:6px;height:6px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .2s;border:none;flex-shrink:0}
-.banner-dot.active{width:20px;border-radius:3px;background:var(--accent)}
-.banner-dots-more{font-size:12px;color:var(--text-tertiary);margin-left:2px}
+/* page indicator */
+.banner-page-indicator{text-align:center;padding:8px 0 0;font-size:12px;font-weight:500;color:var(--text-tertiary);font-variant-numeric:tabular-nums}
+/* toast bar */
+.toast-bar{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;padding:10px 22px;border-radius:22px;font-size:13px;z-index:9999;white-space:nowrap;animation:fadeIn .15s ease-out;pointer-events:none}
 .banner-empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;flex:1;min-height:360px;padding:30px}
 .banner-empty-icon{color:var(--text-tertiary);opacity:.5}
 .banner-empty-text{font-size:14px;color:var(--text-secondary)}
@@ -140,6 +143,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display'
 .auth-submit:disabled{opacity:.5;cursor:default}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s ease-out}
+.modal{background:var(--bg-card);border-radius:var(--radius-lg);max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:slideUp .25s cubic-bezier(.22,1,.36,1)}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-card);z-index:1}
+.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-secondary);padding:4px 8px;border-radius:6px;font-family:inherit}
+.modal-close:hover{background:var(--bg-secondary)}
+.modal-body{padding:16px 20px}
+.level-row{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.level-row:last-child{border-bottom:none}
+.level-row .lv-badge{flex-shrink:0;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.level-info{flex:1}
+.level-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+.level-desc{font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:5px}
+.level-eg{font-size:11px;color:var(--text-tertiary);font-style:italic;line-height:1.5}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 .shake{animation:shake .4s ease-out}
 @media(min-width:600px){

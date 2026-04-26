@@ -22,15 +22,24 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
   const [animating, setAnimating] = useState(false)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
   const [showAddSheet, setShowAddSheet] = useState(false)
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>()
 
   // Swipe state
-  const containerRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [touchX, setTouchX] = useState(0)
   const [isTouching, setIsTouching] = useState(false)
   const startX = useRef(0)
+  const startTime = useRef(0)
   const currentTranslate = useRef(0)
 
   const userId = getOrCreateUserId()
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 2500)
+  }
 
   const toggleFavorite = useCallback(async (caseId: string) => {
     const isFav = favoriteIds.has(caseId)
@@ -68,9 +77,10 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
   const goNext = () => goTo(currentIndex + 1)
   const goPrev = () => goTo(currentIndex - 1)
 
-  // Touch handlers for swipe
+  // Touch handlers – UX人因: 阈值=卡片宽25%, 附加速度检测, 不足则回弹
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
+    startTime.current = Date.now()
     setIsTouching(true)
   }
 
@@ -83,10 +93,19 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
 
   const onTouchEnd = () => {
     setIsTouching(false)
-    if (Math.abs(currentTranslate.current) > 60) {
-      if (currentTranslate.current > 0) goPrev()
+    const dx = currentTranslate.current
+    const elapsed = Date.now() - startTime.current
+    const velocity = Math.abs(dx) / Math.max(elapsed, 1) // px/ms
+    const cardWidth = cardRef.current?.offsetWidth || 320
+    const threshold = Math.max(cardWidth * 0.25, 60)
+
+    // 速度 > 0.4px/ms 视为快速滑动，短距也可触发
+    // 或者拖动距离超过阈值
+    if (Math.abs(dx) > threshold || (velocity > 0.4 && Math.abs(dx) > 20)) {
+      if (dx > 0) goPrev()
       else goNext()
     }
+    // 否则回弹（transition 自动处理）
     setTouchX(0)
     currentTranslate.current = 0
   }
@@ -112,7 +131,7 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
       </div>
 
       {/* Banner card */}
-      <div className="banner-wrap" ref={containerRef}>
+      <div className="banner-wrap">
         {/* Edge arrows */}
         <button className="banner-arrow banner-arrow-left" onClick={goPrev} disabled={currentIndex <= 0} aria-label="上一张">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -127,13 +146,13 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
 
         {/* Card */}
         <div
-          className={`banner-card${isTouching ? ' touching' : ''}`}
+          ref={cardRef}
+          className={`banner-card${isTouching ? ' touching' : animating ? ' animating' : ''}`}
           style={{
-            transform: isTouching
-              ? `translateX(${touchX}px)`
-              : undefined,
-            transition: isTouching ? 'none' : 'transform .3s cubic-bezier(.22,1,.36,1), opacity .3s ease',
-            animation: !isTouching && !animating ? undefined : undefined,
+            transform: isTouching ? `translateX(${touchX}px)` : undefined,
+            transition: isTouching
+              ? 'none'
+              : 'transform .35s cubic-bezier(.34,1.56,.64,1), opacity .2s ease',
           }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -158,7 +177,19 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
                 <div className="banner-query">{card.query}</div>
 
                 <div className="banner-section">
-                  <div className="banner-section-label">预设数据</div>
+                  <div className="banner-section-head">
+                    <span className="banner-section-label">预设数据</span>
+                    <button className="banner-copy-btn" onClick={() => {
+                      navigator.clipboard.writeText(card.preset || '')
+                      showToast('已复制预设数据')
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                      复制
+                    </button>
+                  </div>
                   <div className="banner-section-text">{card.preset}</div>
                 </div>
 
@@ -174,7 +205,14 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
 
               <div className="banner-footer">
                 <span className="banner-source"><PinIcon size={11} /> {card.source}</span>
-                <button className="assistant-btn-sm" onClick={(e) => { e.stopPropagation(); sendQueryToAssistant(card.query) }}>
+                <button
+                  className="assistant-btn-sm"
+                  onClick={async (e) => {
+                    e.stopPropagation()
+                    const r = await sendQueryToAssistant(card.query)
+                    showToast(r.device === 'huawei' ? '已复制，可唤醒小艺粘贴提问' : '已复制到剪贴板')
+                  }}
+                >
                   <MicIcon size={12} /> 发到助手
                 </button>
               </div>
@@ -193,16 +231,9 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
           )}
         </div>
 
-        {/* Page dots */}
-        <div className="banner-dots">
-          {cases.slice(0, Math.min(total, 20)).map((_, i) => (
-            <span
-              key={i}
-              className={`banner-dot ${i === currentIndex ? 'active' : ''}`}
-              onClick={() => goTo(i)}
-            />
-          ))}
-          {total > 20 && <span className="banner-dots-more">...</span>}
+        {/* Page indicator: 数字代替圆点 */}
+        <div className="banner-page-indicator">
+          {currentIndex + 1} / {total}
         </div>
       </div>
 
@@ -214,6 +245,9 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
         </svg>
         添加测试用例
       </button>
+
+      {/* Toast */}
+      {toast && <div className="toast-bar">{toast}</div>}
 
       {/* Add sheet */}
       <AddSheet
