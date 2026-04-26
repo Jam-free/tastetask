@@ -1,150 +1,35 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Case } from '../types'
 import { LevelBadge, SheetBadge } from './Badges'
 import { getOrCreateUserId } from '../utils/userId'
 import { sendQueryToAssistant } from '../utils/voiceAssistant'
+import { AddSheet } from './AddSheet'
 import {
   HeartIcon,
   HeartFilledIcon,
   PinIcon,
-  TargetIcon,
   MicIcon,
-  EyeIcon,
-  EyeOffIcon,
-  DoneIcon,
 } from './Icons'
-
-interface FlashCardProps {
-  card: Case
-  onFlip: () => void
-  flipped: boolean
-  isFavorited: boolean
-  onFavorite: () => void
-}
-
-export function FlashCard({
-  card,
-  onFlip,
-  flipped,
-  isFavorited,
-  onFavorite,
-}: FlashCardProps) {
-  const [assistantResult, setAssistantResult] = useState<{copied: boolean; device: string} | null>(null)
-  const assistantTimer = useRef<ReturnType<typeof setTimeout>>()
-
-  const handleSendToAssistant = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    sendQueryToAssistant(card.query).then((result) => {
-      setAssistantResult(result)
-      clearTimeout(assistantTimer.current)
-      assistantTimer.current = setTimeout(() => setAssistantResult(null), 3000)
-    })
-  }
-
-  const dismissOverlay = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setAssistantResult(null)
-    clearTimeout(assistantTimer.current)
-  }
-
-  const overlayContent = () => {
-    if (!assistantResult) return null
-    const { device } = assistantResult
-    const closeBtn = (
-      <button className="ov-close" onClick={dismissOverlay}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    )
-    if (device === 'huawei') {
-      return (<>
-        <div className="ov-title">已复制问题到剪贴板</div>
-        <b>唤起小艺的方式：</b><br />• 说「小艺小艺」<br />• 或长按电源键 1 秒<br />唤醒后直接说出或粘贴问题即可
-        {closeBtn}
-      </>)
-    }
-    if (device === 'android') {
-      return (<>
-        <div className="ov-title">已复制问题到剪贴板</div>
-        请唤起你的语音助手（长按 Home 键或侧边键），然后粘贴提问
-        {closeBtn}
-      </>)
-    }
-    return (<>
-      <div className="ov-title">已复制问题到剪贴板</div>
-      请唤起语音助手（长按 Home 键说「Hey Siri」），然后粘贴提问
-      {closeBtn}
-    </>)
-  }
-
-  return (
-    <div className="card-main" onClick={onFlip}>
-      <div className="card-header">
-        <span className="card-id">{card.id}</span>
-        <LevelBadge level={card.level} />
-        <SheetBadge sheet={card.sheet} />
-        {card.userAdded && (
-          <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
-            自添加
-          </span>
-        )}
-        <button className={`fav-btn ${isFavorited ? 'on' : ''}`} onClick={e => { e.stopPropagation(); onFavorite(); }}>
-          {isFavorited ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} />}
-        </button>
-      </div>
-
-      {!flipped ? (
-        <div className="card-body">
-          <div className="card-query">{card.query}</div>
-          {card.imageData && <img src={card.imageData} className="card-img" alt="附图" />}
-          <div className="card-query-actions">
-            <button className="assistant-btn-inline" onClick={handleSendToAssistant}>
-              <MicIcon size={15} /> 发到语音助手
-            </button>
-          </div>
-          <p className="card-hint">点击翻看答案</p>
-        </div>
-      ) : (
-        <div className="card-body" style={{ overflowY: 'auto' }}>
-          <div className="card-answer-section">
-            <div className="card-answer-label">预设数据</div>
-            <div className="card-answer-text" style={{ fontSize: 12 }}>{card.preset}</div>
-          </div>
-          <div className="card-answer-section">
-            <div className="card-answer-label">Golden Answer</div>
-            <div className="card-answer-text">{card.golden}</div>
-          </div>
-          {card.imageData && (
-            <div className="card-answer-section">
-              <div className="card-answer-label">附图</div>
-              <img src={card.imageData} className="card-img" alt="附图" style={{ marginTop: 4 }} />
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="card-footer">
-        <span className="footer-meta"><PinIcon size={11} />{card.source}</span>
-        <span className="footer-meta footer-skill"><TargetIcon size={11} />{card.skill}</span>
-      </div>
-
-      {assistantResult && (
-        <div className="assistant-overlay" onClick={e => e.stopPropagation()}>{overlayContent()}</div>
-      )}
-    </div>
-  )
-}
 
 interface CardsViewProps {
   cases: Case[]
   onShuffle?: () => void
+  onAdd: (newCase: Partial<Case>) => void
 }
 
-export function CardsView({ cases, onShuffle }: CardsViewProps) {
+export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [flipped, setFlipped] = useState(false)
-  const [animDir, setAnimDir] = useState<'left' | 'right' | null>(null)
   const [animating, setAnimating] = useState(false)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+  const [showAddSheet, setShowAddSheet] = useState(false)
+
+  // Swipe state
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [touchX, setTouchX] = useState(0)
+  const [isTouching, setIsTouching] = useState(false)
+  const startX = useRef(0)
+  const currentTranslate = useRef(0)
+
   const userId = getOrCreateUserId()
 
   const toggleFavorite = useCallback(async (caseId: string) => {
@@ -172,57 +57,50 @@ export function CardsView({ cases, onShuffle }: CardsViewProps) {
 
   const card = cases[currentIndex]
   const total = cases.length
-  const done = currentIndex
 
-  const goNext = () => {
-    if (animating || currentIndex >= total - 1) return
-    setAnimDir('left')
+  const goTo = (index: number) => {
+    if (animating || index < 0 || index >= total) return
     setAnimating(true)
-    setTimeout(() => {
-      setCurrentIndex(i => i + 1)
-      setFlipped(false)
-      setAnimDir(null)
-      setAnimating(false)
-    }, 150)
+    setCurrentIndex(index)
+    setTimeout(() => setAnimating(false), 300)
   }
 
-  const goPrev = () => {
-    if (animating || currentIndex <= 0) return
-    setAnimDir('right')
-    setAnimating(true)
-    setTimeout(() => {
-      setCurrentIndex(i => i - 1)
-      setFlipped(false)
-      setAnimDir(null)
-      setAnimating(false)
-    }, 150)
+  const goNext = () => goTo(currentIndex + 1)
+  const goPrev = () => goTo(currentIndex - 1)
+
+  // Touch handlers for swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX
+    setIsTouching(true)
   }
 
-  const reset = () => {
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!isTouching) return
+    const dx = e.touches[0].clientX - startX.current
+    setTouchX(dx)
+    currentTranslate.current = dx
+  }
+
+  const onTouchEnd = () => {
+    setIsTouching(false)
+    if (Math.abs(currentTranslate.current) > 60) {
+      if (currentTranslate.current > 0) goPrev()
+      else goNext()
+    }
+    setTouchX(0)
+    currentTranslate.current = 0
+  }
+
+  // Reset index when cases change
+  useEffect(() => {
     setCurrentIndex(0)
-    setFlipped(false)
-  }
-
-  const cardStyle: React.CSSProperties = {
-    animation: animDir ? `cardSlide${animDir === 'left' ? 'Out' : 'In'} .15s ease-out` : undefined,
-  }
-
-  // 当 shuffle 获取新数据时重置到第一张
-  // cases 引用变化时自动重置
-  // 但需要避免在初次渲染时重置
-  // 直接用 currentIndex 的变化来响应 cases 长度变化
-  // 如果 cases 变了且 currentIndex 超出，重置
-  if (cases.length > 0 && currentIndex >= cases.length) {
-    // 会在下一次渲染修正，但为了不破坏 hooks 规则，用 setTimeout
-    setTimeout(() => setCurrentIndex(0), 0)
-  }
+  }, [cases.length])
 
   return (
-    <div className="card-area">
-      <div className="deck-bar">
-        <div className="deck-info">
-          {done} / {total} 已查看
-        </div>
+    <div className="cards-page">
+      {/* Top bar */}
+      <div className="cards-top">
+        <span className="cards-count">{total} 条测试用例</span>
         <button className="shuffle-btn" onClick={() => onShuffle?.()}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="23 4 23 10 17 10" />
@@ -233,57 +111,119 @@ export function CardsView({ cases, onShuffle }: CardsViewProps) {
         </button>
       </div>
 
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
-      </div>
-
-      <div className="card-viewport" style={cardStyle}>
-        {card ? (
-          <FlashCard
-            key={currentIndex}
-            card={card}
-            onFlip={() => setFlipped(f => !f)}
-            flipped={flipped}
-            isFavorited={favoriteIds.has(card.id)}
-            onFavorite={() => toggleFavorite(card.id)}
-          />
-        ) : (
-          <div className="done-card">
-            <DoneIcon size={44} />
-            <div className="done-title">没有更多用例</div>
-            <button className="reset-btn" onClick={reset} style={{ marginTop: 8 }}>
-              换一批试试
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="nav-row">
-        <button className="nav-row-btn" onClick={goPrev} disabled={currentIndex <= 0}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* Banner card */}
+      <div className="banner-wrap" ref={containerRef}>
+        {/* Edge arrows */}
+        <button className="banner-arrow banner-arrow-left" onClick={goPrev} disabled={currentIndex <= 0} aria-label="上一张">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          上一张
         </button>
-
-        <div className="nav-row-center">
-          <button className="nav-row-icon" onClick={() => setFlipped(f => !f)} title="翻面">
-            {flipped ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-          </button>
-          <span className="nav-row-count">{currentIndex + 1}/{total}</span>
-        </div>
-
-        <button className="nav-row-btn" onClick={goNext} disabled={currentIndex >= total - 1}>
-          下一张
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <button className="banner-arrow banner-arrow-right" onClick={goNext} disabled={currentIndex >= total - 1} aria-label="下一张">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
+
+        {/* Card */}
+        <div
+          className={`banner-card${isTouching ? ' touching' : ''}`}
+          style={{
+            transform: isTouching
+              ? `translateX(${touchX}px)`
+              : undefined,
+            transition: isTouching ? 'none' : 'transform .3s cubic-bezier(.22,1,.36,1), opacity .3s ease',
+            animation: !isTouching && !animating ? undefined : undefined,
+          }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {card ? (
+            <>
+              <div className="banner-header">
+                <div className="banner-meta">
+                  <LevelBadge level={card.level} />
+                  <SheetBadge sheet={card.sheet} />
+                </div>
+                <button
+                  className={`fav-btn ${favoriteIds.has(card.id) ? 'on' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); toggleFavorite(card.id) }}
+                >
+                  {favoriteIds.has(card.id) ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} />}
+                </button>
+              </div>
+
+              <div className="banner-body">
+                <div className="banner-query">{card.query}</div>
+
+                <div className="banner-section">
+                  <div className="banner-section-label">预设数据</div>
+                  <div className="banner-section-text">{card.preset}</div>
+                </div>
+
+                <div className="banner-section">
+                  <div className="banner-section-label">预期回答</div>
+                  <div className="banner-section-text golden">{card.golden}</div>
+                </div>
+
+                {card.imageData && (
+                  <img src={card.imageData} className="banner-img" alt="附图" />
+                )}
+              </div>
+
+              <div className="banner-footer">
+                <span className="banner-source"><PinIcon size={11} /> {card.source}</span>
+                <button className="assistant-btn-sm" onClick={(e) => { e.stopPropagation(); sendQueryToAssistant(card.query) }}>
+                  <MicIcon size={12} /> 发到助手
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="banner-empty">
+              <div className="banner-empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+              </div>
+              <div className="banner-empty-text">没有更多用例</div>
+              <button className="shuffle-btn" onClick={() => onShuffle?.()}>换一批</button>
+            </div>
+          )}
+        </div>
+
+        {/* Page dots */}
+        <div className="banner-dots">
+          {cases.slice(0, Math.min(total, 20)).map((_, i) => (
+            <span
+              key={i}
+              className={`banner-dot ${i === currentIndex ? 'active' : ''}`}
+              onClick={() => goTo(i)}
+            />
+          ))}
+          {total > 20 && <span className="banner-dots-more">...</span>}
+        </div>
       </div>
 
-      {card && (
-        <div className="card-note">备注：{card.note}</div>
-      )}
+      {/* Add button */}
+      <button className="add-case-btn" onClick={() => setShowAddSheet(true)}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        添加测试用例
+      </button>
+
+      {/* Add sheet */}
+      <AddSheet
+        isOpen={showAddSheet}
+        onClose={() => setShowAddSheet(false)}
+        onSubmit={(data) => {
+          onAdd(data)
+          setShowAddSheet(false)
+        }}
+      />
     </div>
   )
 }

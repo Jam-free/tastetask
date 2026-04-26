@@ -3,7 +3,6 @@ import { getOrCreateUserId } from './utils/userId'
 import { Case, TabType } from './types'
 import { CardsView } from './components/CardsView'
 import { TableView } from './components/TableView'
-import { AddView } from './components/AddView'
 import { FavoritesView } from './components/FavoritesView'
 import { LevelModal } from './components/LevelModal'
 import { AdminLogin } from './components/AdminLogin'
@@ -170,12 +169,6 @@ function App() {
             全部用例
           </button>
           <button
-            className={`nav-btn ${tab === 'add' ? 'active' : ''}`}
-            onClick={() => setTab('add')}
-          >
-            添加用例
-          </button>
-          <button
             className={`nav-btn ${tab === 'favorites' ? 'active' : ''}`}
             onClick={() => setTab('favorites')}
           >
@@ -222,54 +215,13 @@ function App() {
         </div>
       </nav>
 
-      {/* 统计栏 - 仅在非管理员页面显示 */}
-      {tab !== 'admin' && (
-        <div className="stat-row">
-          <div className="stat-card">
-            <div className="n">{cases.length}</div>
-            <div className="l">本次</div>
-          </div>
-          <div className="stat-card">
-            <div className="n">
-              {cases.filter((c) => c.level === 'L1').length}
-            </div>
-            <div className="l">L1</div>
-          </div>
-          <div className="stat-card">
-            <div className="n">
-              {cases.filter((c) => c.level === 'L2').length}
-            </div>
-            <div className="l">L2</div>
-          </div>
-          <div className="stat-card">
-            <div className="n">
-              {cases.filter((c) => c.level === 'L3').length}
-            </div>
-            <div className="l">L3</div>
-          </div>
-          <div className="stat-card">
-            <div className="n">
-              {cases.filter((c) => c.level === 'L4').length}
-            </div>
-            <div className="l">L4</div>
-          </div>
-          <div className="stat-card">
-            <div className="n">
-              {cases.filter((c) => c.level === 'L5').length}
-            </div>
-            <div className="l">L5</div>
-          </div>
-        </div>
-      )}
-
       {/* 内容区域 */}
       {tab === 'admin' ? (
         <AdminDashboard token={adminToken!} onLogout={handleAdminLogout} />
       ) : (
         <>
-          {tab === 'cards' && <CardsView cases={cases} onShuffle={() => loadCases(true)} />}
+          {tab === 'cards' && <CardsView cases={cases} onShuffle={() => loadCases(true)} onAdd={handleAddCase} />}
           {tab === 'table' && <TableView cases={cases} />}
-          {tab === 'add' && <AddView onAdd={handleAddCase} />}
           {tab === 'favorites' && <FavoritesView cases={favorites} />}
         </>
       )}
