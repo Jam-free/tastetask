@@ -1,0 +1,6 @@
+# Docker 部署
+node_modules/
+dist/
+*.log
+.env
+.DS_Store

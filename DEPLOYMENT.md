@@ -1,209 +1,209 @@
-# Taste-Task 试金石 部署指南
+# 部署指南
 
-## 本地运行
+## Taste-Task 试金石 v2.0 部署文档
 
-### 1. 安装依赖
+### 架构说明
+
+- **前端**: Vite + React 18 + TypeScript
+- **后端**: Express + TypeScript + Prisma ORM
+- **数据库**: SQLite (开发) / PostgreSQL (生产)
+
+---
+
+## 部署方案
+
+### 方案 A: Vercel (前端) + Railway (后端)
+
+#### 1. 前端部署到 Vercel
+
 ```bash
+# 安装 Vercel CLI
+npm i -g vercel
+
+# 在 frontend 目录下部署
+cd frontend
+vercel
+```
+
+**环境变量配置:**
+- `VITE_API_URL`: 后端API地址
+
+#### 2. 后端部署到 Railway
+
+1. 访问 [railway.app](https://railway.app/)
+2. 新建项目，连接GitHub仓库
+3. 配置环境变量：
+   - `DATABASE_URL`: PostgreSQL连接字符串
+   - `JWT_SECRET`: 随机生成的密钥
+   - `ADMIN_PASSWORD_HASH`: bcrypt哈希后的管理员密码
+   - `CORS_ORIGIN`: 前端地址
+   - `NODE_ENV`: `production`
+
+4. 生成管理员密码哈希：
+```bash
+node -e "console.log(require('bcrypt').hashSync('你的密码', 10))"
+```
+
+---
+
+### 方案 B: Render 全栈部署
+
+#### 前端部署
+
+1. 在 `frontend/` 目录创建 `render.yaml`:
+```yaml
+services:
+  - type: web
+    name: tastetask-frontend
+    env: static
+    buildCommand: npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://tastetask-backend.onrender.com
+```
+
+#### 后端部署
+
+1. 在 `backend/` 目录创建 `render.yaml`:
+```yaml
+services:
+  - type: web
+    name: tastetask-backend
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tastetask-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD_HASH
+        value: "你的bcrypt哈希"
+      - key: CORS_ORIGIN
+        value: https://tastetask-frontend.onrender.com
+      - key: NODE_ENV
+        value: production
+```
+
+---
+
+### 方案 C: 自托管 (VPS)
+
+1. 安装依赖：
+```bash
+# 安装 Node.js 18+
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# 安装 PM2
+sudo npm install -g pm2
+```
+
+2. 克隆仓库并安装：
+```bash
+git clone https://github.com/Jam-free/tastetask.git
+cd tastetask
+
+# 安装后端依赖
+cd backend
 npm install
+npm run build
+
+# 生成 Prisma 客户端
+npx prisma generate
+npx prisma db push
+npm run prisma:seed
 ```
 
-### 2. 初始化数据库
-```bash
-node init-db.js
-```
-
-### 3. 启动服务器
-```bash
-npm start
-```
-
-访问：http://localhost:3000
-
-## 服务器部署
-
-### 使用 PM2 部署（推荐）
-
-1. **安装 PM2**
-```bash
-npm install -g pm2
-```
-
-2. **启动应用**
-```bash
-cd /path/to/tastetask
-pm2 start server.js --name tastetask
-```
-
-3. **设置开机自启**
-```bash
-pm2 startup
-pm2 save
-```
-
-4. **常用命令**
-```bash
-pm2 status           # 查看状态
-pm2 logs tastetask   # 查看日志
-pm2 restart tastetask # 重启
-pm2 stop tastetask    # 停止
-```
-
-### 使用 systemd 部署（Linux）
-
-1. **创建服务文件**
-```bash
-sudo nano /etc/systemd/system/tastetask.service
-```
-
-2. **添加以下内容**
-```ini
-[Unit]
-Description=Taste-Task Test Suite
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/path/to/tastetask
-ExecStart=/usr/bin/node server.js
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-3. **启动服务**
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable tastetask
-sudo systemctl start tastetask
-```
-
-### 使用 Docker 部署
-
-1. **创建 Dockerfile**
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --production
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["node", "server.js"]
-```
-
-2. **构建并运行**
-```bash
-docker build -t tastetask .
-docker run -d -p 3000:3000 --name tastetask -v $(pwd)/tastetask.db:/app/tastetask.db tastetask
-```
-
-### 使用 Nginx 反向代理
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-## 环境变量
-
-可以创建 `.env` 文件配置环境变量：
-
-```bash
-PORT=3000
+3. 配置环境变量 (.env):
+```env
+PORT=3001
+DATABASE_URL="file:./tastetask.db"
+JWT_SECRET=随机生成
+ADMIN_PASSWORD_HASH=bcrypt哈希
+CORS_ORIGIN=前端地址
 NODE_ENV=production
 ```
 
-## 数据备份
-
-定期备份数据库文件：
-
+4. 启动服务：
 ```bash
-# 手动备份
-cp tastetask.db tastetask.db.backup.$(date +%Y%m%d)
+# 后端
+pm2 start dist/server.js --name tastetask-backend
 
-# 使用 cron 自动备份
-0 2 * * * cp /path/to/tastetask.db /path/to/backup/tastetask.db.$(date +\%Y\%m\%d)
+# 前端
+cd ../frontend
+npm install
+npm run build
+
+# 使用 nginx 或 caddy 托管静态文件
 ```
 
-## 监控和日志
+---
 
-### PM2 日志
+## 环境变量检查清单
+
+### 后端必需变量
+
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `PORT` | 服务端口 | `3001` |
+| `DATABASE_URL` | 数据库连接 | `file:../tastetask.db` 或 PostgreSQL URL |
+| `JWT_SECRET` | JWT签名密钥 | 随机字符串 |
+| `ADMIN_PASSWORD_HASH` | 管理员密码bcrypt哈希 | `$2b$10$...` |
+| `CORS_ORIGIN` | 允许的前端地址 | `http://localhost:3000` |
+| `NODE_ENV` | 运行环境 | `production` |
+
+### 前端可选变量
+
+| 变量名 | 说明 |
+|--------|------|
+| `VITE_API_URL` | 后端API地址（开发时由proxy处理） |
+
+---
+
+## 数据库迁移
+
+### SQLite → PostgreSQL
+
+1. 导出SQLite数据：
 ```bash
-pm2 logs tastetask --lines 100
+cd backend
+npx prisma db pull
 ```
 
-### 系统日志
+2. 更新 `.env` 中的 `DATABASE_URL` 为PostgreSQL地址
+
+3. 推送到PostgreSQL：
 ```bash
-journalctl -u tastetask -f
+npx prisma db push
+npm run prisma:seed
 ```
 
-## 故障排查
+---
 
-### 端口被占用
-```bash
-# 查找占用端口的进程
-lsof -i :3000
+## 健康检查
 
-# 杀死进程
-kill -9 <PID>
-```
+部署后验证以下端点：
 
-### 数据库锁定
-如果遇到 "database is locked" 错误：
-```bash
-# 删除锁定文件
-rm tastetask.db-shm tastetask.db-wal
-```
+- `GET /api/health` - 服务器状态
+- `GET /api/cases/stats` - 统计信息
+- `POST /api/auth/login` - 管理员登录
 
-### 权限问题
-```bash
-# 设置正确的文件权限
-chmod 644 tastetask.db
-chmod 755 public
-```
+---
 
-## 性能优化
+## 常见问题
 
-1. **启用压缩**：使用 Nginx 的 gzip 压缩
-2. **静态文件缓存**：配置浏览器缓存策略
-3. **数据库优化**：定期清理旧的收藏记录
-4. **负载均衡**：使用 PM2 集群模式
+### Q: CORS 错误
+A: 检查后端 `CORS_ORIGIN` 环境变量是否包含前端地址
 
-```bash
-pm2 start server.js -i max --name tastetask
-```
+### Q: 上传图片失败
+A: 检查请求体大小限制，Express默认限制为100kb
 
-## 安全建议
+### Q: 数据库连接失败
+A: 确认 `DATABASE_URL` 格式正确，SQLite使用相对路径
 
-1. **修改管理员密码**：在 `server.js` 中修改密码
-2. **启用 HTTPS**：使用 Let's Encrypt 证书
-3. **防火墙配置**：限制数据库文件访问
-4. **定期更新**：保持依赖包最新
-
-## 升级指南
-
-1. 备份数据库
-2. 拉取最新代码
-3. 运行 `npm install`
-4. 重启服务
+### Q: 管理员登录失败
+A: 确认 `ADMIN_PASSWORD_HASH` 使用 bcrypt 加密（10轮）

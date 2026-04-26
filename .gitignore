@@ -9,3 +9,7 @@ tastetask.db-wal
 .idea/
 dist/
 build/
+*.tar.gz
+*.zip
+unified_inbox.json
+files.zip
