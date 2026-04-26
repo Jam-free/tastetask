@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { Case } from '../types'
 import { LevelBadge, SheetBadge } from './Badges'
 import { getOrCreateUserId } from '../utils/userId'
-import { sendQueryToAssistant } from '../utils/voiceAssistant'
+import { sendQueryToAssistant, copyToClipboard } from '../utils/voiceAssistant'
 import { AddSheet } from './AddSheet'
 import {
   HeartIcon,
@@ -31,8 +31,10 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
   const [swiping, setSwiping] = useState(false)
   const [swipeX, setSwipeX] = useState(0)
   const sx = useRef(0)
+  const sy = useRef(0)
   const st = useRef(0)
   const sd = useRef(0)
+  const isHorizontal = useRef(false)
 
   const userId = getOrCreateUserId()
   const toastIt = (m: string) => { setToast(m); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(''), 2500) }
@@ -60,14 +62,30 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
   const next = () => go(index + 1)
   const prev = () => go(index - 1)
 
-  const onTouchStart = (e: React.TouchEvent) => { sx.current = e.touches[0].clientX; st.current = Date.now(); setSwiping(true) }
-  const onTouchMove = (e: React.TouchEvent) => { if (!swiping) return; const d = e.touches[0].clientX - sx.current; sd.current = d; setSwipeX(d) }
+  const onTouchStart = (e: React.TouchEvent) => {
+    sx.current = e.touches[0].clientX
+    sy.current = e.touches[0].clientY
+    st.current = Date.now()
+    setSwiping(true)
+    isHorizontal.current = false
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!swiping) return
+    const dx = e.touches[0].clientX - sx.current
+    const dy = Math.abs(e.touches[0].clientY - sy.current)
+    // 垂直滑动的距离大于水平时，不做卡片移动（避免上下滑动时卡片颤抖）
+    if (!isHorizontal.current && dy > Math.abs(dx) * 1.2 && dy > 10) return
+    isHorizontal.current = true
+    sd.current = dx
+    setSwipeX(dx)
+  }
   const onTouchEnd = () => {
     setSwiping(false); setSwipeX(0)
+    if (!isHorizontal.current) { sd.current = 0; return }
     const d = sd.current; const v = Math.abs(d) / Math.max(Date.now() - st.current, 1)
     const w = cardRef.current?.offsetWidth || 320
     if (Math.abs(d) > w * 0.25 || (v > 0.4 && Math.abs(d) > 20)) { d > 0 ? prev() : next() }
-    sd.current = 0
+    sd.current = 0; isHorizontal.current = false
   }
 
   useEffect(() => { setIndex(0); setAnimDir(null); setAnimating(false) }, [cases.length])
@@ -137,7 +155,7 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
                     <button
                       className="assistant-btn-query"
                       onClick={async e => {
-                        (e.target as HTMLButtonElement).blur()
+                        e.currentTarget.blur()
                         const r = await sendQueryToAssistant(card.query)
                         toastIt(r.device === 'huawei' ? '已复制，可唤醒小艺粘贴提问' : '已复制到剪贴板')
                       }}
@@ -149,10 +167,10 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
                   <div className="banner-section">
                     <div className="banner-section-head">
                       <span className="banner-section-label">预设数据</span>
-                      <button className="banner-copy-btn" onClick={e => {
-                        (e.target as HTMLButtonElement).blur()
-                        try { navigator.clipboard.writeText(card.preset || ''); toastIt('已复制预设数据') }
-                        catch { toastIt('复制失败，请手动复制') }
+                      <button className="banner-copy-btn" onClick={async e => {
+                        e.currentTarget.blur()
+                        const ok = await copyToClipboard(card.preset || '')
+                        toastIt(ok ? '已复制预设数据' : '复制失败，请手动复制')
                       }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                         复制

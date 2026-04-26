@@ -31,7 +31,7 @@ body{
   background-attachment:fixed;
 }
 /* 修复按钮点击后仍显示 :focus 样式 */
-button:focus:not(:focus-visible){outline:none}
+button:focus:not(:focus-visible){outline:none;box-shadow:none}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .app{max-width:780px;margin:0 auto;padding:0 0 40px;min-height:100vh;display:flex;flex-direction:column}
 /* nav */
@@ -83,15 +83,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .banner-body{flex:1;min-height:0;padding:14px 20px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .banner-query{font-size:23px;font-weight:600;color:var(--text);line-height:1.4;letter-spacing:-.02em;word-break:break-word}
 .banner-query-actions{display:flex;gap:8px;margin-bottom:6px}
-.assistant-btn-query{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .15s;touch-action:manipulation}
+.assistant-btn-query{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .assistant-btn-query:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-.assistant-btn-query:active{transform:scale(.97)}
-.assistant-btn-query:focus:not(:focus-visible){outline:none}
+.assistant-btn-query:active{transform:scale(.97);background:var(--bg-card);border-color:var(--border);color:var(--text-secondary)}
+.assistant-btn-query:focus:not(:focus-visible){outline:none;background:var(--bg-card);border-color:var(--border);color:var(--text-secondary)}
 .banner-section{background:var(--bg-secondary);border-radius:var(--radius-sm);padding:10px 13px;border:1px solid var(--border-light);flex-shrink:0}
 .banner-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .banner-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)}
 .banner-copy-btn{background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:10px;display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:5px;font-family:inherit;transition:all .12s;flex-shrink:0}
 .banner-copy-btn:hover{background:var(--accent-light);color:var(--accent)}
+.banner-copy-btn:active{background:transparent;color:var(--text-tertiary)}
+.banner-copy-btn:focus:not(:focus-visible){background:transparent;color:var(--text-tertiary)}
 .banner-section-text{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
 .banner-section-text.golden{color:var(--accent);font-weight:500}
 .banner-img{max-width:100%;border-radius:var(--radius-sm);max-height:140px;object-fit:cover;display:block;margin-top:2px;flex-shrink:0}

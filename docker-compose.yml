@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=file:./tastetask.db
+      - DATABASE_URL=file:./data/tastetask.db
       - JWT_SECRET=${JWT_SECRET:-tastetask-change-this-in-production}
       - ADMIN_PASSWORD_HASH=$$2b$$10$$OIWej6TdrRBfNTojBi0zT.oTZhcUesX3pBnJu0mDmQOCBhe2WfGka
       - CORS_ORIGIN=*
