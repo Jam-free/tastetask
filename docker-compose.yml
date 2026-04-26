@@ -11,6 +11,7 @@ services:
       - PORT=3001
       - DATABASE_URL=file:./tastetask.db
       - JWT_SECRET=${JWT_SECRET:-tastetask-change-this-in-production}
+      - ADMIN_PASSWORD_HASH=$$2b$$10$$OIWej6TdrRBfNTojBi0zT.oTZhcUesX3pBnJu0mDmQOCBhe2WfGka
       - CORS_ORIGIN=*
     volumes:
       - backend-data:/app/data
