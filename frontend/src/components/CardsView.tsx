@@ -66,23 +66,28 @@ export function CardsView({ cases, onShuffle, onAdd }: CardsViewProps) {
     sx.current = e.touches[0].clientX
     sy.current = e.touches[0].clientY
     st.current = Date.now()
-    setSwiping(true)
+    sd.current = 0
     isHorizontal.current = false
+    setSwiping(true)
   }
   const onTouchMove = (e: React.TouchEvent) => {
     if (!swiping) return
     const dx = e.touches[0].clientX - sx.current
     const dy = Math.abs(e.touches[0].clientY - sy.current)
-    // 垂直滑动的距离大于水平时，不做卡片移动（避免上下滑动时卡片颤抖）
-    if (!isHorizontal.current && dy > Math.abs(dx) * 1.2 && dy > 10) return
+    // 严格方向判定: 水平必须明显大于垂直才触发滑动
+    if (Math.abs(dx) < 8) return // 忽略微小平移
+    if (!isHorizontal.current && dy > Math.abs(dx) * 0.5) return // 垂直分量太大则忽略
     isHorizontal.current = true
     sd.current = dx
     setSwipeX(dx)
   }
   const onTouchEnd = () => {
-    setSwiping(false); setSwipeX(0)
+    setSwiping(false)
+    setSwipeX(0)
     if (!isHorizontal.current) { sd.current = 0; return }
-    const d = sd.current; const v = Math.abs(d) / Math.max(Date.now() - st.current, 1)
+    const d = sd.current
+    if (Math.abs(d) < 8) { sd.current = 0; return } // 距离太短忽略
+    const v = Math.abs(d) / Math.max(Date.now() - st.current, 1)
     const w = cardRef.current?.offsetWidth || 320
     if (Math.abs(d) > w * 0.25 || (v > 0.4 && Math.abs(d) > 20)) { d > 0 ? prev() : next() }
     sd.current = 0; isHorizontal.current = false
