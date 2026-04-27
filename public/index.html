@@ -199,7 +199,7 @@ const {useState,useEffect,useRef,useCallback}=React;
 
 // 配置
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-const BATCH_SIZE = 30;
+const BATCH_SIZE = 10;
 
 const LEVEL_STYLE={
   L1:{bg:'#ECFDF5',color:'#065F46'},
@@ -972,13 +972,18 @@ function App(){
     }
   }, []);
 
-  useEffect(()=>{
-    if (!verified) return; // 未验证时不加载数据
+  // 加载统计数据
+  const loadStats = useCallback(() => {
+    if (!verified) return;
     apiCall('/stats').then(data=>{
       setStats(data);
     });
     apiCall('/cases/top/favorites?limit=5').then(setTopCases);
-  },[verified]);
+  }, [verified]);
+
+  useEffect(()=>{
+    loadStats();
+  },[loadStats]);
 
   const tabs=[
     {id:'cards',label:'闪卡练习'},
@@ -1001,7 +1006,7 @@ function App(){
           {tab!=='add'&&stats&&<StatsRow total={stats.total} byLevel={stats.byLevel}/>}
           {tab==='cards'&&<CardsView/>}
           {tab==='table'&&<TableView/>}
-          {tab==='add'&&<AddView/>}
+          {tab==='add'&&<AddView onAdd={loadStats}/>}
           {tab==='table'&&<FavoriteRanking cases={topCases}/>}
           {tab==='cards'&&<LevelGuide/>}
         </div>
