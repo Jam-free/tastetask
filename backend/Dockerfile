@@ -22,5 +22,5 @@ RUN npx prisma generate
 # 暴露端口
 EXPOSE 3001
 
-# 启动服务（自动初始化数据库，已存在数据时跳过）
+# 启动服务（db push 同步 schema，seed 智能检测：空库导入种子，已有数据则跳过）
 CMD ["sh", "-c", "npx prisma db push && (npx tsx src/seed.ts 2>/dev/null || echo '种子数据已存在，跳过') && npm start"]

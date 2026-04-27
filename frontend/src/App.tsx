@@ -15,6 +15,7 @@ type TabTypeWithAdmin = TabType | 'admin'
 function App() {
   const [tab, setTab] = useState<TabTypeWithAdmin>('cards')
   const [cases, setCases] = useState<Case[]>([])
+  const [allCases, setAllCases] = useState<Case[]>([])
   const [favorites, setFavorites] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
   const [showLevelModal, setShowLevelModal] = useState(false)
@@ -23,25 +24,34 @@ function App() {
   const [userId] = useState(() => getOrCreateUserId())
   const [authed, setAuthed] = useState(() => !!localStorage.getItem('tt_auth_pass'))
 
-  // 加载用例数据
-  const loadCases = useCallback(async (random = false) => {
+  // 加载随机用例数据（用于体验卡片）
+  const loadCases = useCallback(async () => {
     setLoading(true)
     try {
-      const randomParam = random ? '?random=true&limit=30' : ''
-      const response = await fetch(`/api/cases${randomParam}`)
+      const response = await fetch('/api/cases?random=true&limit=10')
       const data = await response.json()
 
       if (data.success) {
-        if (random) {
-          setCases(data.data)
-        } else {
-          setCases(data.data.cases || [])
-        }
+        setCases(data.data)
       }
     } catch (err) {
       console.error('加载用例失败:', err)
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  // 加载全量用例数据（用于用例总览）
+  const loadAllCases = useCallback(async () => {
+    try {
+      const response = await fetch('/api/cases?limit=500')
+      const data = await response.json()
+
+      if (data.success) {
+        setAllCases(data.data.cases || [])
+      }
+    } catch (err) {
+      console.error('加载全量用例失败:', err)
     }
   }, [])
 
@@ -65,14 +75,15 @@ function App() {
 
   // 初始化加载
   useEffect(() => {
-    loadCases(true) // 默认加载30条随机用例
+    loadCases() // 默认加载10条随机用例
+    loadAllCases() // 加载全量用例
 
     // 检查是否有保存的管理员token
     const savedToken = localStorage.getItem('tt_admin_token')
     if (savedToken) {
       setAdminToken(savedToken)
     }
-  }, [loadCases])
+  }, [loadCases, loadAllCases])
 
   // 管理员登录成功
   const handleAdminLoginSuccess = (token: string) => {
@@ -95,17 +106,6 @@ function App() {
     }
   }, [tab, loadFavorites])
 
-  // 刷新当前视图数据
-  const refresh = () => {
-    if (tab === 'favorites') {
-      loadFavorites()
-    } else if (tab === 'cards') {
-      loadCases(true)
-    } else {
-      loadCases(false)
-    }
-  }
-
   // 添加用例
   const handleAddCase = async (newCase: Partial<Case>) => {
     try {
@@ -121,7 +121,8 @@ function App() {
 
       if (data.success) {
         alert('✓ 已添加到测试集')
-        refresh()
+        loadCases()
+        loadAllCases()
       } else {
         alert(data.error || '添加失败')
       }
@@ -228,8 +229,8 @@ function App() {
         <AdminDashboard token={adminToken!} onLogout={handleAdminLogout} />
       ) : (
         <>
-          {tab === 'cards' && <CardsView cases={cases} onShuffle={() => loadCases(true)} onAdd={handleAddCase} />}
-          {tab === 'table' && <TableView cases={cases} />}
+          {tab === 'cards' && <CardsView cases={cases} onShuffle={() => loadCases()} onAdd={handleAddCase} />}
+          {tab === 'table' && <TableView cases={allCases} />}
           {tab === 'favorites' && <FavoritesView cases={favorites} />}
         </>
       )}

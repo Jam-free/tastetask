@@ -357,12 +357,16 @@ const PRESET_CASES = [
 ]
 
 async function main() {
-  console.log('🌱 开始导入种子数据...')
+  console.log('🌱 检查种子数据...')
 
-  // 清空现有数据（开发环境）
-  await prisma.favorite.deleteMany({})
-  await prisma.case.deleteMany({})
-  console.log('✅ 已清空现有数据')
+  // 检查是否已有数据，有则跳过
+  const existingCount = await prisma.case.count()
+  if (existingCount > 0) {
+    console.log(`✅ 数据库已有 ${existingCount} 条用例，跳过种子导入`)
+    return
+  }
+
+  console.log('📦 数据库为空，开始导入种子数据...')
 
   // 导入预置用例
   let count = 0

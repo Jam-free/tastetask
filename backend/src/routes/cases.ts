@@ -9,7 +9,7 @@ import { parseCaseFilter, success, error } from '../lib/api-utils.js'
  */
 export async function getCases(req: Request, res: Response): Promise<void> {
   try {
-    const { level, sheet, random, limit = 30 } = parseCaseFilter(req)
+    const { level, sheet, random, limit = 500 } = parseCaseFilter(req)
     const userId = req.userId
 
     // 构建查询条件
@@ -51,7 +51,7 @@ export async function getCases(req: Request, res: Response): Promise<void> {
 
     // 普通分页查询
     const page = Math.max(1, parseInt(req.query.page as string) || 1)
-    const pageSize = Math.min(100, limit)
+    const pageSize = Math.min(500, limit)
     const skip = (page - 1) * pageSize
 
     const [cases, total] = await Promise.all([
